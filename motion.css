@@ -1,0 +1,400 @@
+/* ============================================================
+   THORN & GRAIN — motion layer
+   Loaded after styles.css. Kept as a separate file so the whole
+   motion system can be removed in one line without touching the
+   design system.
+
+   🚨 THE REDUCED-MOTION CONTRACT
+   Reveal animations start from opacity:0. "Turn animation off"
+   would therefore leave the page BLANK for anyone with the OS
+   setting on, and would break tools/shoot.mjs, which captures
+   under reducedMotion:'reduce'. So every rule below resolves to
+   the FINAL state under reduced motion — visible, in place, no
+   transition. Motion is removed; content never is.
+   ============================================================ */
+
+/* Cross-document view transitions. Chromium-only today, ignored
+   elsewhere, and purely additive: navigation still works. */
+@view-transition { navigation: auto; }
+
+/* ============ SCROLL REVEAL ============ */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .62s cubic-bezier(.22, .61, .36, 1),
+              transform .62s cubic-bezier(.22, .61, .36, 1);
+  transition-delay: var(--d, 0ms);
+  will-change: opacity, transform;
+}
+.reveal.is-in { opacity: 1; transform: none; }
+
+/* A grid whose children stagger. --i is stamped per card by site.js;
+   the cap stops a 21-item shop grid ending on a 1.6s delay. */
+.stagger > * {
+  opacity: 0;
+  transform: translateY(16px) scale(.985);
+  animation: tg-rise .55s cubic-bezier(.22, .61, .36, 1) forwards;
+  animation-delay: calc(min(var(--i, 0), 11) * 55ms);
+}
+@keyframes tg-rise {
+  to { opacity: 1; transform: none; }
+}
+
+/* ============ SIGNATURE MOTIF: THE GRAIN LINE ============
+   Every site in this network has one piece of motion that belongs
+   only to it. Here it is wood grain: four strokes that draw
+   themselves left to right as the divider scrolls into view, the
+   way a plane pulls a shaving off a board. Used between bands. */
+.grain-rule { display: block; width: 100%; height: 34px; overflow: visible; }
+.grain-rule path {
+  fill: none;
+  stroke: var(--ochre);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: .5;
+  stroke-dasharray: var(--len, 1200);
+  stroke-dashoffset: var(--len, 1200);
+}
+.grain-rule.is-in path {
+  animation: tg-draw 1.5s cubic-bezier(.32, .72, .3, 1) forwards;
+  animation-delay: calc(var(--n, 0) * 130ms);
+}
+.grain-rule path:nth-child(2) { opacity: .32; }
+.grain-rule path:nth-child(3) { opacity: .22; }
+.grain-rule path:nth-child(4) { opacity: .14; }
+@keyframes tg-draw { to { stroke-dashoffset: 0; } }
+
+/* ============ HEADER: CONDENSE ON SCROLL ============ */
+.head {
+  position: sticky; top: 0; z-index: 90;
+  transition: box-shadow .25s ease, padding .25s ease, background .25s ease;
+}
+.head.is-stuck {
+  box-shadow: 0 6px 26px rgb(36 31 27 / .09);
+  background: rgb(255 255 255 / .93);
+  backdrop-filter: blur(9px);
+}
+.head.is-stuck .head-inner { padding-top: 8px; padding-bottom: 8px; }
+.head-inner { transition: padding .25s ease; }
+
+/* Scroll-progress hairline. CSS scroll-driven, so it costs no JS and
+   no scroll handler. Decorative — browsers without support show
+   nothing, which is the correct degradation. */
+.scroll-bar {
+  position: fixed; inset: 0 auto auto 0; z-index: 120;
+  height: 2px; width: 100%; transform-origin: 0 50%; transform: scaleX(0);
+  background: linear-gradient(90deg, var(--ochre), var(--ochre-soft));
+  pointer-events: none;
+}
+@supports (animation-timeline: scroll()) {
+  .scroll-bar {
+    animation: tg-progress linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+@keyframes tg-progress { to { transform: scaleX(1); } }
+
+/* ============ HERO ============
+   Slides are stacked in one grid cell and cross-faded, rather than
+   display:none-swapped. Two consequences worth knowing: the tallest
+   slide sets the band height (no jump between slides), and the
+   images in inactive slides actually load, which display:none
+   prevented. */
+.hero-slides { display: grid; }
+.hero-slide {
+  grid-area: 1 / 1;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .85s ease, visibility .85s;
+}
+.hero-slide.is-on { opacity: 1; visibility: visible; pointer-events: auto; }
+
+/* The product disc drifts almost imperceptibly while its slide is up.
+   Slow enough to read as depth rather than movement. */
+.hero-slide.is-on .hero-piece { animation: tg-drift 15s ease-in-out infinite alternate; }
+@keyframes tg-drift {
+  from { transform: translateY(0) scale(1); }
+  to   { transform: translateY(-11px) scale(1.022); }
+}
+.hero-slide.is-on .hero-plant { animation: tg-drift 15s ease-in-out 1.4s infinite alternate-reverse; }
+
+/* Copy re-enters on each slide change. */
+.hero-slide.is-on .hero-kicker,
+.hero-slide.is-on .hero-eyebrow,
+.hero-slide.is-on h1,
+.hero-slide.is-on .hero-lede,
+.hero-slide.is-on .btn {
+  animation: tg-hero-in .7s cubic-bezier(.22, .61, .36, 1) backwards;
+}
+.hero-slide.is-on .hero-eyebrow { animation-delay: .07s; }
+.hero-slide.is-on h1            { animation-delay: .14s; }
+.hero-slide.is-on .hero-lede    { animation-delay: .22s; }
+.hero-slide.is-on .btn          { animation-delay: .3s; }
+@keyframes tg-hero-in {
+  from { opacity: 0; transform: translateY(15px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The ghost numeral rolls over on slide change. */
+.hero-num { transition: opacity .4s ease; }
+.hero-num.is-swap { opacity: .18; }
+
+/* Dots carry a progress fill.
+   🔑 The duration comes from --hero-interval, which site.js sets from
+   its own SLIDE_MS. A sibling site in this network keeps the same
+   number in JS and CSS and has to remember to change both; this has
+   one source of truth on purpose. */
+.hero-dots button { position: relative; overflow: visible; }
+.hero-dots button::after {
+  content: ''; position: absolute; inset: -5px; border-radius: 50%;
+  border: 1.5px solid var(--ochre); opacity: 0;
+  clip-path: inset(0 100% 0 0);
+}
+.hero-dots button[aria-current='true']::after {
+  opacity: 1;
+  animation: tg-dot-fill var(--hero-interval, 6000ms) linear forwards;
+}
+@keyframes tg-dot-fill { to { clip-path: inset(0 0 0 0); } }
+
+/* ============ TOWN TICKER ============
+   The seven towns, running. It states the brand's whole premise
+   without a sentence, and gives the page a pulse between two static
+   bands. Duplicated content + -50% translate = a seamless loop. */
+.ticker {
+  overflow: hidden; background: var(--ink); color: var(--sand);
+  padding: 13px 0; border-block: 1px solid rgb(255 255 255 / .08);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.ticker-track {
+  display: flex; width: max-content; gap: 0;
+  animation: tg-ticker 34s linear infinite;
+}
+.ticker:hover .ticker-track { animation-play-state: paused; }
+.ticker-group { display: flex; gap: 0; flex: none; }
+.ticker span {
+  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 400;
+  letter-spacing: .2em; text-transform: uppercase; white-space: nowrap;
+  padding: 0 26px; display: inline-flex; align-items: center; gap: 26px;
+}
+.ticker span::after {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--ochre); flex: none;
+}
+@keyframes tg-ticker { to { transform: translateX(-50%); } }
+
+/* ============ PRODUCT CARD ============ */
+.card-media { transform: translateZ(0); }
+.card-media::after {
+  /* A light sweep across the tile on hover — a shine on a finished
+     surface. Pure decoration, so it is masked out entirely for
+     reduced motion rather than merely slowed. */
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / .34) 50%, transparent 62%);
+  transform: translateX(-120%);
+  transition: transform .75s ease;
+}
+.card:hover .card-media::after { transform: translateX(120%); }
+.card { transition: transform .3s cubic-bezier(.22,.61,.36,1); }
+.card:hover { transform: translateY(-4px); }
+.card-name a { background-image: linear-gradient(var(--ochre), var(--ochre));
+  background-size: 0% 1px; background-repeat: no-repeat; background-position: 0 100%;
+  transition: background-size .3s ease; padding-bottom: 1px; }
+.card:hover .card-name a { background-size: 100% 1px; }
+
+/* badge entrance */
+.badge { animation: tg-badge .45s cubic-bezier(.34,1.56,.64,1) backwards; animation-delay: .25s; }
+@keyframes tg-badge {
+  from { opacity: 0; transform: translateY(-6px) scale(.86); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============ BASKET FEEDBACK ============ */
+.count.is-pop { animation: tg-pop .5s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes tg-pop {
+  0%   { transform: scale(1); }
+  38%  { transform: scale(1.55); }
+  100% { transform: scale(1); }
+}
+/* The chip that flies from the product to the basket. Positioned and
+   animated by site.js via the Web Animations API, because the start
+   and end points are only known at click time. */
+.fly-chip {
+  position: fixed; z-index: 300; border-radius: 50%;
+  object-fit: cover; pointer-events: none;
+  box-shadow: 0 10px 30px rgb(36 31 27 / .3);
+}
+.tools a.is-hit { animation: tg-hit .45s ease; }
+@keyframes tg-hit {
+  0%, 100% { transform: none; }
+  40%      { transform: translateY(-5px) scale(1.12); }
+}
+
+/* ============ QUICK VIEW ============ */
+dialog.qv {
+  border: none; padding: 0; max-width: 880px; width: calc(100% - 32px);
+  border-radius: 6px; background: var(--paper); color: var(--ink);
+  box-shadow: 0 30px 80px rgb(36 31 27 / .32);
+}
+dialog.qv::backdrop { background: rgb(36 31 27 / .55); }
+dialog.qv[open] { animation: tg-qv-in .34s cubic-bezier(.22,.61,.36,1); }
+dialog.qv[open]::backdrop { animation: tg-fade .34s ease; }
+@keyframes tg-qv-in {
+  from { opacity: 0; transform: translateY(14px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes tg-fade { from { opacity: 0; } to { opacity: 1; } }
+.qv-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.qv-grid img { width: 100%; height: 100%; min-height: 300px; object-fit: cover; background: var(--tile); }
+.qv-body { padding: 30px 32px 32px; }
+.qv-body h2 { font-family: 'Jost', sans-serif; font-weight: 400; font-size: 27px; line-height: 1.12; margin: 6px 0 8px; }
+.qv-close {
+  position: absolute; top: 12px; right: 14px; z-index: 2;
+  width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--paper); box-shadow: 0 3px 12px rgb(36 31 27 / .18); font-size: 19px; line-height: 1;
+}
+.qv-close:hover { background: var(--ink); color: #fff; }
+@media (max-width: 720px) {
+  .qv-grid { grid-template-columns: 1fr; }
+  .qv-grid img { min-height: 210px; max-height: 240px; }
+}
+
+/* ============ PROVENANCE MAP ============
+   Two contexts: stacked inside the home page's makers column, and side-by-side
+   on the makers page where there is a full row to spend. */
+.map-wrap { position: relative; display: grid; gap: 22px; }
+/* minmax(0, …) is load-bearing, not defensive noise. A bare `1fr` track is
+   really minmax(auto, 1fr), and that auto floor is MIN-CONTENT — the panel's
+   longest unbreakable line ("Newtown, Johannesburg · since 2009 · 4 pieces")
+   pushed its track past its share and squeezed the map from 560px down to
+   300px. Same family of bug as a flex child needing min-width: 0. */
+.map-wrap-wide {
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  align-items: center; gap: 40px;
+}
+.map-svg { width: 100%; height: auto; overflow: visible; display: block; }
+/* Capped, and with room either side for the labels that run into the margin.
+   Uncapped, the country is 860 viewBox units tall and eats a whole viewport. */
+/* `width: 100%` is required, not redundant. `margin-inline: auto` cancels a
+   grid item's default justify-self:stretch, making it shrink-to-fit — and an
+   <svg> carrying only a viewBox has a CSS intrinsic width of 300px. The child's
+   width:100% then resolved against a parent sized by its child, and the whole
+   map collapsed to that 300px default. A definite width breaks the loop. */
+.map-wrap [data-map] { min-width: 0; width: 100%; max-width: 400px; margin-inline: auto; }
+/* The horizontal padding is the gutter the outward-running labels live in. */
+.map-wrap-wide [data-map] { max-width: 760px; padding: 0 74px; }
+@media (max-width: 900px) {
+  .map-wrap-wide { grid-template-columns: 1fr; gap: 24px; }
+  .map-wrap-wide [data-map] { max-width: 440px; padding: 0; }
+  /* Same reasoning as the teaser map: below this width the labels stop being
+     readable, so they are dropped rather than shrunk. */
+  .map-pin text { display: none; }
+}
+.map-outline {
+  fill: var(--sand); stroke: var(--ink); stroke-width: 2.4; fill-rule: evenodd;
+  stroke-dasharray: var(--map-len, 6000); stroke-dashoffset: var(--map-len, 6000);
+  opacity: 0;
+  /* Nothing happens when you hover the country, so it must not intercept.
+     Filled and full-bleed, it otherwise sits over every pin's hit area and
+     eats the hover — the map looks interactive and does nothing. */
+  pointer-events: none;
+}
+.map-wrap.is-in .map-outline {
+  animation: tg-map-draw 2.1s cubic-bezier(.32,.72,.3,1) forwards,
+             tg-map-fill .8s ease 1.15s forwards;
+}
+@keyframes tg-map-draw { to { stroke-dashoffset: 0; } }
+@keyframes tg-map-fill { from { opacity: 0; } to { opacity: 1; } }
+
+.map-pin { cursor: pointer; }
+.map-pin circle.dot {
+  fill: var(--ochre); stroke: #fff; stroke-width: 3;
+  transform-box: fill-box; transform-origin: center;
+  transition: r .2s ease;
+}
+.map-pin circle.halo {
+  fill: none; stroke: var(--ochre); stroke-width: 2; opacity: 0;
+  transform-box: fill-box; transform-origin: center;
+}
+.map-wrap.is-in .map-pin { animation: tg-pin-drop .5s cubic-bezier(.34,1.5,.64,1) backwards; }
+.map-wrap.is-in .map-pin { animation-delay: calc(1.35s + var(--n, 0) * 90ms); }
+@keyframes tg-pin-drop {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: none; }
+}
+/* The active pin pulses — one ring, continuously, so the eye is told
+   which workshop the list below belongs to. */
+.map-pin.is-active circle.halo { opacity: 1; animation: tg-ping 2s ease-out infinite; }
+@keyframes tg-ping {
+  0%   { transform: scale(.7); opacity: .75; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+.map-pin:hover circle.dot, .map-pin.is-active circle.dot { r: 15; }
+.map-pin text {
+  /* Sized in viewBox units, so legibility depends on the RENDERED width. At
+     700px the map scales 0.7 and this lands at ~18px; anywhere smaller the
+     labels are hidden instead of shrunk — see below. */
+  font-size: 26px; font-family: 'Inter', sans-serif; font-weight: 500;
+  fill: var(--ink); paint-order: stroke; stroke: var(--sand-2); stroke-width: 6px;
+  transition: fill .2s ease;
+  /* The label LOOKS clickable, so it has to be. */
+  cursor: pointer;
+}
+.map-pin:hover text, .map-pin.is-active text { fill: var(--ochre); }
+
+/* The home-page map is a teaser in a narrow column: at that width the labels
+   would render around 11px and read as noise. The panel beneath already names
+   the town on hover, so the pins carry it alone. */
+.map-wrap:not(.map-wrap-wide) .map-pin text { display: none; }
+
+.map-panel {
+  border-left: 3px solid var(--ochre); padding-left: 18px; min-height: 118px;
+}
+.map-panel h3 { font-family: 'Jost', sans-serif; font-weight: 500; font-size: 21px; margin-bottom: 4px; }
+.map-panel .meta { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+.map-panel p { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+.map-panel .swap { animation: tg-hero-in .34s ease; }
+
+/* ============ TRUST + MAKER ROWS ============ */
+.trust-cell svg { transition: transform .3s cubic-bezier(.34,1.5,.64,1); }
+.trust-cell:hover svg { transform: translateY(-3px) scale(1.09); }
+.maker-row { transition: background .2s ease, padding-left .2s ease; }
+.maker-row:hover { background: var(--sand-2); padding-left: 8px; }
+
+/* ============ PROMO BANNERS ============ */
+.promo-body { transition: outline-offset .35s ease; }
+.promo:hover .promo-body { outline-offset: -18px; }
+.promo h3 { transition: transform .35s cubic-bezier(.22,.61,.36,1); }
+.promo:hover h3 { transform: translateY(-3px); }
+
+/* ============ BUTTONS ============ */
+.btn { position: relative; overflow: hidden; }
+.btn svg { transition: transform .28s cubic-bezier(.22,.61,.36,1); }
+.btn:hover svg { transform: translateX(4px); }
+.link-more svg { transition: transform .28s cubic-bezier(.22,.61,.36,1); }
+.link-more:hover svg { transform: translateX(4px); }
+
+/* ============ THE ONE PLACE MOTION IS REMOVED ============
+   Everything above resolves to its finished state here. Note the
+   .reveal / .stagger / draw rules force the VISIBLE end state —
+   they do not merely cancel the animation, which would leave the
+   page blank. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1 !important; transform: none !important; }
+  .stagger > * { opacity: 1 !important; transform: none !important; animation: none !important; }
+  .grain-rule path { stroke-dashoffset: 0 !important; }
+  .map-outline { stroke-dashoffset: 0 !important; opacity: 1 !important; }
+  .map-pin { opacity: 1 !important; transform: none !important; }
+  .map-pin.is-active circle.halo { opacity: .5 !important; animation: none !important; }
+  .hero-slide.is-on .hero-piece,
+  .hero-slide.is-on .hero-plant { animation: none !important; transform: none !important; }
+  .ticker-track { animation: none !important; }
+  .card-media::after { display: none !important; }
+  .scroll-bar { display: none !important; }
+  .hero-dots button::after { animation: none !important; clip-path: inset(0 0 0 0) !important; }
+}

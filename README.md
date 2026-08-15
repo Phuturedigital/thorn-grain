@@ -42,6 +42,38 @@ This is a store, not a picture of one. All of it runs client-side against
 - **Saved list** — heart toggle on every card, count in the header
 - **Rooms** — a second axis over the same catalogue (a piece can be in several)
 - **Countdown strips** — real deadlines, not decoration (see below)
+- **Quick view** — a native `<dialog>` on every card, so focus trapping and
+  Escape are the platform's job rather than ours
+- **Provenance map** — the seven workshops on a real outline of South Africa;
+  hover or click a town to swap the panel and land on a pre-filtered shop
+
+## Motion
+
+`motion.css` + `motion.js`, loaded after the design system. The whole layer is
+**additive**: it listens for events `site.js` dispatches (`tg:add`, `tg:render`)
+rather than being called by it, so deleting both files leaves a working store.
+
+What moves: scroll reveals with stagger, a cross-fading hero with a drifting
+product disc and a progress ring on the dots, count-up figures, a running ticker
+of the seven towns, a sweep across product tiles on hover, a chip that flies
+from the product to the basket, the map drawing itself, and the **grain rule** —
+four strokes that draw like a plane pulling a shaving off a board. That last one
+is this site's signature motif; every concept in the network has one.
+
+### 🚨 The reduced-motion contract
+
+Reveal animations start at `opacity: 0`. "Turn animations off" would therefore
+leave the page **blank** for anyone with the OS setting on — and would blank
+every screenshot in `tools/shots/`, because `shoot.mjs` captures under
+`reducedMotion:'reduce'`. So the media query in `motion.css` forces the
+**finished** state rather than cancelling the animation. Motion is removed;
+content never is.
+
+Anything JS drives needs its own gate, because a media query cannot stop a
+`requestAnimationFrame` loop — see `STILL` in `motion.js`.
+
+`node tools/motion-check.mjs` asserts all of this, and it is the check that
+matters most in this repo after `smoke.mjs`.
 
 There is **no checkout**. The button is deliberately dead rather than pretending
 to take a card, and the contact form says outright that it sends nothing.
@@ -78,8 +110,11 @@ thorn-grain/
 node tools/serve.mjs          # http://localhost:4321
 
 node tools/smoke.mjs          # 30 checks — pins the copy to the arithmetic
+node tools/motion-check.mjs   # 26 checks — reduced motion, carousel, map, quick view
 node tools/shoot.mjs          # screenshots, 8 pages x desktop + phone
 node tools/charcheck.mjs      # look-alike whitespace scan
+node tools/build-map.mjs      # regenerate map-data.js (rarely needed)
+node tools/map-preview.mjs    # render the map alone, to eyeball the outline
 ```
 
 **`tools/smoke.mjs` is the important one.** The site states specific figures —

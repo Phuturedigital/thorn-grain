@@ -33,7 +33,7 @@
 
   const cartQty = () => cart.reduce((n, line) => n + line.qty, 0);
 
-  function addToCart(id, qty) {
+  function addToCart(id, qty, from) {
     const product = byId(id);
     if (!product) return;
     const line = cart.find((l) => l.id === id);
@@ -42,6 +42,10 @@
     write(KEY_CART, cart);
     paintCounts();
     toast(`${product.name} added to your basket`);
+    /* `from` is the element that was clicked. The motion layer needs it to fly
+       a chip from the product to the basket icon, and only the click site knows
+       where that is. */
+    document.dispatchEvent(new CustomEvent('tg:add', { detail: { product, from } }));
   }
 
   function setQty(id, qty) {
@@ -158,6 +162,10 @@
                     title="Save to your list" aria-label="Save ${esc(product.name)} to your list">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21.2l7.8-7.7 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg>
             </button>
+            <button type="button" data-quick="${esc(product.id)}"
+                    title="Quick view" aria-label="Quick view of ${esc(product.name)}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 12s3.8-6.5 10-6.5S22 12 22 12s-3.8 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.6"/></svg>
+            </button>
             <button type="button" data-add="${esc(product.id)}"
                     title="Add to basket" aria-label="Add ${esc(product.name)} to basket">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6h15l-1.7 9.4a2 2 0 0 1-2 1.6H9.5a2 2 0 0 1-2-1.6L5.6 3.9A1 1 0 0 0 4.6 3H2"/><circle cx="10" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/></svg>
@@ -171,12 +179,21 @@
       </article>`;
   }
 
+  /* Grids are re-rendered wholesale on every filter change, so the stagger is
+     stamped here rather than in markup. `--i` drives the per-card delay in
+     motion.css; the class is only added when there are cards, so the empty
+     state does not animate in as if it were a result. */
   const renderGrid = (el, list) => {
     el.innerHTML = list.length
       ? list.map(card).join('')
       : '<div class="empty"><b>Nothing matches that</b><p>Try clearing a filter, or browse the full range.</p></div>';
+    el.classList.toggle('stagger', list.length > 0);
+    [...el.children].forEach((child, i) => child.style.setProperty('--i', i));
     paintCounts();
     tickDeals();
+    /* The motion layer listens rather than being called, so it stays optional:
+       delete motion.js and the store still works exactly as before. */
+    document.dispatchEvent(new CustomEvent('tg:render', { detail: { el, count: list.length } }));
   };
 
   /* ---------------- countdown ticking ----------------
@@ -245,7 +262,7 @@
     /* Delegated so it also covers cards injected after load. */
     document.addEventListener('click', (e) => {
       const add = e.target.closest('[data-add]');
-      if (add) { addToCart(add.dataset.add, 1); return; }
+      if (add) { addToCart(add.dataset.add, 1, add); return; }
       const heart = e.target.closest('[data-wish-toggle]');
       if (heart) { toggleWish(heart.dataset.wishToggle); }
     });
@@ -259,24 +276,61 @@
     const slides = [...document.querySelectorAll('[data-slide]')];
     const dots = [...document.querySelectorAll('[data-dot]')];
     const numEl = document.querySelector('[data-hero-num]');
+    const heroEl = document.querySelector('.hero');
+
     if (slides.length) {
+      /* ONE source of truth for the slide duration. It is written into a CSS
+         custom property so the progress ring on the dots is driven by the same
+         number that drives the timer. A sibling site in this network keeps the
+         interval in JS and the fill duration in CSS, both 6.5s, and they have
+         to be remembered together — this cannot drift. */
+      const SLIDE_MS = 6200;
+      document.documentElement.style.setProperty('--hero-interval', `${SLIDE_MS}ms`);
+
       let at = 0;
       let timer = null;
+
       const show = (i) => {
         at = (i + slides.length) % slides.length;
-        slides.forEach((s, n) => s.classList.toggle('is-on', n === at));
+        slides.forEach((s, n) => {
+          const on = n === at;
+          s.classList.toggle('is-on', on);
+          /* Hidden slides are still in the layout (they are cross-faded, not
+             display:none), so they must be taken out of the tab order and the
+             accessibility tree explicitly. */
+          s.toggleAttribute('inert', !on);
+          s.setAttribute('aria-hidden', String(!on));
+        });
         dots.forEach((d, n) => d.setAttribute('aria-current', String(n === at)));
-        if (numEl) numEl.textContent = String(at + 1).padStart(2, '0');
+        if (numEl) {
+          numEl.classList.add('is-swap');
+          setTimeout(() => {
+            numEl.textContent = String(at + 1).padStart(2, '0');
+            numEl.classList.remove('is-swap');
+          }, 200);
+        }
       };
-      dots.forEach((d, n) => d.addEventListener('click', () => { show(n); restart(); }));
 
-      /* Auto-advance is suppressed for anyone who asked for reduced motion —
-         a hero that changes under you is motion, even without a transition. */
+      /* Auto-advance is suppressed for anyone who asked for reduced motion — a
+         hero that changes under you is motion, even with no transition on it. */
       const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const restart = () => {
         clearInterval(timer);
-        if (!still) timer = setInterval(() => show(at + 1), 6000);
+        if (!still) timer = setInterval(() => show(at + 1), SLIDE_MS);
       };
+
+      dots.forEach((d, n) => d.addEventListener('click', () => { show(n); restart(); }));
+
+      if (heroEl && !still) {
+        /* Pause while the pointer is over it or the tab is in the background —
+           advancing a carousel nobody is looking at just burns the animation. */
+        heroEl.addEventListener('mouseenter', () => clearInterval(timer));
+        heroEl.addEventListener('mouseleave', restart);
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) clearInterval(timer); else restart();
+        });
+      }
+
       show(0);
       restart();
     }
@@ -311,8 +365,16 @@
        box or a room banner all land on a shop page that agrees with itself. */
     const wantCat = params.get('cat');
     const wantRoom = params.get('room');
+    const wantMaker = params.get('maker');
     if (wantCat) {
       const box = document.querySelector(`[data-filter-cat][value="${CSS.escape(wantCat)}"]`);
+      if (box) box.checked = true;
+    }
+    /* `maker` is how the provenance map hands off to the shop: clicking a town
+       lands here with that workshop's box already ticked, so the map is
+       navigation rather than an illustration. */
+    if (wantMaker) {
+      const box = document.querySelector(`[data-filter-maker][value="${CSS.escape(wantMaker)}"]`);
       if (box) box.checked = true;
     }
 
@@ -424,8 +486,8 @@
       const next = Math.max(1, Math.min(99, (parseInt(qtyEl.value, 10) || 1) + Number(b.dataset.step)));
       qtyEl.value = next;
     }));
-    mount.querySelector('[data-buy]').addEventListener('click', () => {
-      addToCart(product.id, Math.max(1, parseInt(qtyEl.value, 10) || 1));
+    mount.querySelector('[data-buy]').addEventListener('click', (e) => {
+      addToCart(product.id, Math.max(1, parseInt(qtyEl.value, 10) || 1), e.currentTarget);
     });
 
     const related = document.querySelector('[data-related]');

@@ -50,6 +50,23 @@ The fallback is the safe reading — markdown over, full price, strip hidden —
 and `tools/smoke.mjs` asserts it, so the honest behaviour cannot regress by
 accident.
 
+## The provenance map
+
+The outline of South Africa in `map-data.js` is **real**, not drawn by hand:
+simplified from public-domain country GeoJSON
+(`johan/world.geo.json`, ZAF) by `tools/build-map.mjs`, and projected
+equirectangularly with a `cos(latitude)` correction so the country is not
+stretched. Lesotho is kept as an interior ring because it is the detail that
+makes the shape unmistakable; the Prince Edward Islands are dropped because
+they are ~1800 km into the Southern Ocean and would wreck the bounding box.
+
+The seven towns sit at their **true coordinates**. The towns are real. The
+workshops placed in them are not — see the claims register above.
+
+A map that is subtly the wrong shape reads as amateur immediately, and this is
+a South African audience who will notice. `tools/map-preview.mjs` renders the
+outline on its own so it can be checked before any UI is built around it.
+
 ## Image credits
 
 All photography licensed from **Pexels** (free for commercial use, attribution
