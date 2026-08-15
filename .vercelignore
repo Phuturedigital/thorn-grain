@@ -1,0 +1,14 @@
+# QA + sourcing tooling. Never part of the deployed site.
+# Keeping tools/ out also keeps the Pexels queries and the image-selection
+# notes off the public URL.
+tools/
+
+# Internal docs — still in git, not served
+README.md
+CONTENT-NOTES.md
+DEPLOY.md
+
+# OS / editor
+.DS_Store
+*.swp
+*.html.bak

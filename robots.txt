@@ -1,0 +1,7 @@
+# Thorn & Grain is a concept demo by Phuture Digital, not a real shop.
+# It must never compete in search with a real furniture retailer, and an
+# invented brand ranking for real queries would be actively misleading.
+# The X-Robots-Tag header in vercel.json says the same thing; this is the
+# belt to that pair of braces.
+User-agent: *
+Disallow: /

@@ -1,0 +1,23 @@
+# Dependencies — this repo has none on purpose (zero build)
+node_modules/
+package-lock.json
+
+# QA output: screenshots and contact sheets are large and regenerable
+tools/shots/
+tools/sheets/
+tools/previews/
+
+# Backups
+*.html.bak
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Vercel
+.vercel
