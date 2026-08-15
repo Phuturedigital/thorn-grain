@@ -19,5 +19,6 @@ Thumbs.db
 .idea/
 *.swp
 
-# Vercel
+# Vercel — .env.local holds a short-lived OIDC token written by `vercel link`
 .vercel
+.env*

@@ -611,3 +611,96 @@ footer .brand-word { color: #fff; }
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
   .promo:hover img, .card:hover .card-media img { transform: none; }
 }
+
+/* pd-network:start */
+/* Shared cross-link block across the Phuture Digital concept sites. Same markup
+   and rhythm on every site; the palette below maps THIS site's tokens onto it.
+   Appended at the END of the file so every pd-network* class outranks the bare
+   a{} p{} ul{} resets above. Keep that ordering.
+
+   font-family: inherit (not a named face) is what makes one block of markup
+   read as native on seven different sites — each body already sets its own
+   typeface. Only the heading takes an explicit stack. */
+.pd-network {
+  background: var(--ink);
+  color: #C6B8A9;
+  font-family: inherit;
+  padding: clamp(34px, 4.4vw, 52px) clamp(20px, 3.6vw, 48px);
+}
+.pd-network-inner { max-width: 1080px; margin: 0 auto; }
+.pd-network-eyebrow {
+  font-size: 10.5px; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--ochre-soft); font-weight: 700; margin: 0 0 12px;
+}
+.pd-network-title {
+  font-family: 'Jost', system-ui, sans-serif;
+  font-size: clamp(21px, 2.5vw, 27px); line-height: 1.15; letter-spacing: -.015em;
+  color: #ffffff; font-weight: 500; margin: 0 0 10px; text-wrap: balance;
+}
+.pd-network-lede {
+  font-size: 14.5px; line-height: 1.6; max-width: 56ch;
+  color: #C6B8A9; margin: 0 0 26px;
+}
+.pd-network-grid {
+  list-style: none; margin: 0 0 28px; padding: 0;
+  /* 150px min keeps them on one row on desktop (auto-fit collapses empty
+     tracks), goes 2-up on phones instead of one very long stack, and avoids
+     the awkward wrap a larger min produces around tablet width. */
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;
+}
+.pd-network-card { margin: 0; }
+.pd-network-card a {
+  display: flex; flex-direction: column; height: 100%;
+  padding: 0; overflow: hidden; text-decoration: none;
+  background: var(--ink-2); border: 1px solid rgb(255 255 255 / .14); border-radius: 4px;
+  transition: border-color .18s ease, transform .18s ease, background .18s ease;
+}
+.pd-network-card a:hover,
+.pd-network-card a:focus-visible {
+  border-color: var(--ochre-soft); background: #443C34; transform: translateY(-2px);
+}
+.pd-network-card a:focus-visible { outline: 2px solid var(--ochre-soft); outline-offset: 2px; }
+/* height:auto is required, not optional: the width/height attributes on the
+   <img> become presentational hints that otherwise pin the height and defeat
+   aspect-ratio, letting object-fit crop instead of scale. */
+.pd-network-thumb {
+  display: block; width: 100%; height: auto;
+  aspect-ratio: 16 / 10; object-fit: cover; object-position: top center;
+  background: #443C34; border-bottom: 1px solid rgb(255 255 255 / .14);
+}
+.pd-network-card a:hover .pd-network-thumb { opacity: .92; }
+.pd-network-body { display: flex; flex-direction: column; gap: 3px; flex: 1; padding: 13px 15px 14px; min-width: 0; }
+.pd-network-name { color: #ffffff; font-size: 14.5px; font-weight: 600; line-height: 1.25; }
+.pd-network-sector { color: #C6B8A9; font-size: 12px; line-height: 1.4; }
+.pd-network-go {
+  color: var(--ochre-soft); font-size: 11px; letter-spacing: .05em; font-weight: 600;
+  margin-top: auto; padding-top: 11px;
+}
+.pd-network-cta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px;
+  padding-top: 22px; border-top: 1px solid rgb(255 255 255 / .14);
+}
+.pd-network-cta p { margin: 0 auto 0 0; font-size: 14px; color: #ffffff; font-weight: 600; max-width: none; }
+.pd-network-btn {
+  background: var(--ochre); color: #ffffff; text-decoration: none;
+  padding: 10px 18px; border-radius: 4px; font-size: 13.5px; font-weight: 600;
+}
+.pd-network-btn:hover { background: var(--ochre-soft); }
+.pd-network-link {
+  color: #C6B8A9; text-decoration: none; font-size: 13px;
+  border-bottom: 1px solid rgb(255 255 255 / .14); padding-bottom: 2px;
+}
+.pd-network-link:hover { color: #ffffff; }
+.pd-network-mark {
+  margin: 22px 0 0; padding-top: 16px; border-top: 1px solid rgb(255 255 255 / .14);
+  font-size: 11.5px; line-height: 1.55; color: #C6B8A9; max-width: 72ch;
+}
+.pd-network-mark strong { color: #ffffff; font-weight: 600; }
+@media (max-width: 560px) {
+  .pd-network-cta p { margin-right: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pd-network-card a { transition: none; }
+  .pd-network-card a:hover { transform: none; }
+}
+/* pd-network:end */
